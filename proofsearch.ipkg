@@ -1,0 +1,7 @@
+package proofsearch
+
+sourcedir = src
+
+modules = Test
+
+pkgs = contrib
