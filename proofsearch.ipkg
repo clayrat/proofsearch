@@ -1,7 +1,10 @@
 package proofsearch
 
-sourcedir = src
+sourcedir = "src"
 
-modules = Test
+modules = Diag
+        , CTL
+        , GCL
+        , Crit
 
-pkgs = contrib
+opts = "-p contrib"
