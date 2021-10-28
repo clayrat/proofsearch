@@ -8,9 +8,11 @@ import Diag
 
 %default total
 
+public export
 data CT : Type -> Type -> Type where
   At : (l, s) -> Inf (List (CT l s)) -> CT l s
 
+public export
 model : Diagram l s -> s -> CT l s
 model (TD tr i) st = follow (i, st)
   where
@@ -20,6 +22,7 @@ model (TD tr i) st = follow (i, st)
   followAll [] = []
   followAll (ls :: lss) = follow ls :: followAll lss
 
+public export
 Formula : Type -> Type -> Type
 Formula l s = (depth : Nat) -> (tree : CT l s) -> Type
 
@@ -32,12 +35,14 @@ data LTE'  : (n, m : Nat) -> Type where
 
 ---
 
+public export
 data Sat : (m : CT l s) -> (f : Formula l s) -> Type where
   Satisfies : (0 d0 : Nat) -> ({0 d : Nat} -> LTE' d0 d -> f d m) -> Sat m f
 
 interface DepthInv (0 f : Formula l s) where
   prf : {0 n : Nat} -> {0 m : CT l s} -> f n m -> f (S n) m
 
+public export
 diSat : {f : Formula l s} -> DepthInv f => f n m -> Sat m f
 diSat fnm = Satisfies n (diLte fnm)
   where
@@ -51,6 +56,7 @@ data TrueF : Formula l s where
 DepthInv TrueF where
   prf TT = TT
 
+public export
 data Guard : (0 g : s -> l -> Type) -> Formula l s where
   HereG : {0 st : s} -> {0 ld : l} -> {0 ms : Inf (List (CT l s))} ->
           g st ld -> Guard g d (At (ld, st) ms)
@@ -58,6 +64,7 @@ data Guard : (0 g : s -> l -> Type) -> Formula l s where
 DepthInv (Guard p) where
   prf (HereG x) = HereG x
 
+public export
 data And : (f, g : Formula l s) -> Formula l s where
   MkAnd : f n m -> g n m -> And f g n m
 
@@ -80,6 +87,7 @@ data EU : (f, g : Formula l s) -> Formula l s where
   prf (HereE x)     = HereE $ prf {f=g} x
   prf (ThereE x xs) = ThereE (prf {f} x) (mapProperty (prf {f=EU f g}) xs)
 
+public export
 AF : Formula l s -> Formula l s
 AF = AU TrueF
 
@@ -92,6 +100,7 @@ data Completed : Formula l s where
 DepthInv Completed where
   prf (Cmpl p) = Cmpl p
 
+public export
 AG : Formula l s -> Formula l s
 AG f = AU f (And f Completed)
 
@@ -99,9 +108,11 @@ EG : Formula l s -> Formula l s
 EG f = EU f (And f Completed)
 
 -- TODO looks suspicious
+public export
 MC : {l, s : Type} -> Formula l s -> Type
 MC f = (t : CT l s) -> (d : Nat) -> HDec (f d t)
 
+public export
 now : AnHDec hdec => {g : s -> l -> Type} ->
      ((st : s) -> (ld : l) -> hdec (g st ld)) ->
      MC (Guard g)
@@ -114,6 +125,7 @@ isCompleted (At st ms) _ = Cmpl <$> isEmpty ms
   isEmpty []       = yes Refl
   isEmpty (_ :: _) = no
 
+public export
 AndM : MC f -> MC g -> MC (And f g)
 AndM a b m n = [| MkAnd (a m n) (b m n) |]
 
@@ -130,12 +142,14 @@ EUM mf mg t@(At st ms) (S d) = [| HereE (mg t d) |]
 EFM : MC f -> MC (EF f)
 EFM = EUM (\_, _ => pure TT)
 
+public export
 AFM : MC f -> MC (AF f)
 AFM = AUM (\_, _ => pure TT)
 
 EGM : MC f -> MC (EG f)
 EGM p = EUM p (AndM p isCompleted)
 
+public export
 AGM : MC f -> MC (AG f)
 AGM p = AUM p (AndM p isCompleted)
 

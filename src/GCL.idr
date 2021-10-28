@@ -9,9 +9,9 @@ import Diag
 mutual
   public export
   data GCL : Type -> Type where
-    If     : List (Guard s) -> GCL s
+    If     : List (Grd s) -> GCL s
     Seq    : GCL s -> GCL s -> GCL s
-    Do     : List (Guard s) -> GCL s
+    Do     : List (Grd s) -> GCL s
     Update : (s -> s) -> GCL s
     Skip   : GCL s
 
@@ -20,8 +20,8 @@ mutual
   Pred s = (st : s) -> Bool
 
   public export
-  data Guard : Type -> Type where
-    MkGuard : Pred s -> GCL s -> Guard s
+  data Grd : Type -> Type where
+    MkGrd : Pred s -> GCL s -> Grd s
 
 Uninhabited (If gs = Skip) where
   uninhabited Refl impossible
@@ -35,6 +35,7 @@ Uninhabited (Do gs = Skip) where
 Uninhabited (Update f = Skip) where
   uninhabited Refl impossible
 
+public export
 isSkip : (c : GCL s) -> Dec (c = Skip)
 isSkip (If _)     = No absurd
 isSkip (Seq _ _)  = No absurd
@@ -48,8 +49,8 @@ ops (Update u  , st) = [(Skip, u st)]
 ops (Seq Skip y, st) = [(y, st)]
 -- TODO termination checker for pairs?
 ops (Seq x y   , st) = (\(x,st) => (Seq x y, st)) <$> (assert_total $ ops (x, st))
-ops (If xs     , st) = mapMaybe (\(MkGuard g x) => toMaybe (g st) (x, st)) xs
-ops (Do xs     , st) = case mapMaybe (\(MkGuard g x) => toMaybe (g st) (Seq x (Do xs), st)) xs of
+ops (If xs     , st) = mapMaybe (\(MkGrd g x) => toMaybe (g st) (x, st)) xs
+ops (Do xs     , st) = case mapMaybe (\(MkGrd g x) => toMaybe (g st) (Seq x (Do xs), st)) xs of
                          [] => [(Skip, st)]
                          ys => ys
 
@@ -59,10 +60,10 @@ toDiag p = TD ops p
 
 public export
 await : Pred s -> GCL s
-await g = If [MkGuard g Skip]
+await g = If [MkGrd g Skip]
 
 while : Pred s -> GCL s -> GCL s
-while g x = Do [MkGuard g x]
+while g x = Do [MkGrd g x]
 
 ifThenElse : Pred s -> GCL s -> GCL s -> GCL s
-ifThenElse g x y = If [MkGuard g x, MkGuard (not . g) y]
+ifThenElse g x y = If [MkGrd g x, MkGrd (not . g) y]
